@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<!-- Created with https://packager.turbowarp.org/ -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- We only include this to explicitly loosen the CSP of various packager environments. It does not provide any security. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:">
+  <title>S1E1</title>
+  <style>
+    body {
+      color: #ffffff;
+      font-family: sans-serif;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    :root, body.is-fullscreen {
+      background-color: #000000;
+    }
+    [hidden] {
+      display: none !important;
+    }
+    h1 {
+      font-weight: normal;
+    }
+    a {
+      color: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    #app, #loading, #error, #launch {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #000000;
+    }
+    #launch {
+      background-color: rgba(0, 0, 0, 0.7);
+      cursor: pointer;
+    }
+    .green-flag {
+      width: 80px;
+      height: 80px;
+      padding: 16px;
+      border-radius: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      border: 3px solid hsla(0, 100%, 100%, 1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    #loading {
+      
+    }
+    .progress-bar-outer {
+      border: 1px solid currentColor;
+      height: 10px;
+      width: 200px;
+      max-width: 200px;
+    }
+    .progress-bar-inner {
+      height: 100%;
+      width: 0;
+      background-color: currentColor;
+    }
+    .loading-text, noscript {
+      font-weight: normal;
+      font-size: 36px;
+      margin: 0 0 16px;
+    }
+    .loading-image {
+      margin: 0 0 16px;
+    }
+    #error-message, #error-stack {
+      font-family: monospace;
+      max-width: 600px;
+      white-space: pre-wrap;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    #error-stack {
+      text-align: left;
+      max-height: 200px;
+      overflow: auto;
+    }
+    .control-button {
+      width: 2rem;
+      height: 2rem;
+      padding: 0.375rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: pointer;
+      border: 0;
+      border-radius: 4px;
+    }
+    .control-button:hover {
+      background: #ff4c4c26;
+    }
+    .control-button.active {
+      background: #ff4c4c59;
+    }
+    .fullscreen-button {
+      background: white !important;
+    }
+    .standalone-fullscreen-button {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 0 0 0 4px;
+      padding: 4px;
+      cursor: pointer;
+    }
+    .sc-canvas {
+      cursor: auto;
+    }
+    .sc-monitor-root[data-opcode^="data_"] .sc-monitor-value-color {
+      background-color: #ff8c1a;
+    }
+    .sc-monitor-row-value-outer {
+      background-color: #fc662c;
+    }
+    .sc-monitor-row-value-editing .sc-monitor-row-value-outer {
+      background-color: #e25b27;
+    }
+    
+  </style>
+  <meta name="theme-color" content="#000000">
+  
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="launch" class="screen" hidden title="Click to start">
+    <div class="green-flag">
+      <svg viewBox="0 0 16.63 17.5" width="42" height="44">
+        <defs><style>.cls-1,.cls-2{fill:#4cbf56;stroke:#45993d;stroke-linecap:round;stroke-linejoin:round;}.cls-2{stroke-width:1.5px;}</style></defs>
+        <path class="cls-1" d="M.75,2A6.44,6.44,0,0,1,8.44,2h0a6.44,6.44,0,0,0,7.69,0V12.4a6.44,6.44,0,0,1-7.69,0h0a6.44,6.44,0,0,0-7.69,0"/>
+        <line class="cls-2" x1="0.75" y1="16.75" x2="0.75" y2="0.75"/>
+      </svg>
+    </div>
+  </div>
+
+  <div id="loading" class="screen">
+    <noscript>Enable JavaScript</noscript>
+    
+    
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="loading-inner"></div></div>
+  </div>
+
+  <div id="error" class="screen" hidden>
+    <h1>Error</h1>
+    <details>
+      <summary id="error-message"></summary>
+      <p id="error-stack"></p>
+    </details>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const appElement = document.getElementById('app');
+    const launchScreen = document.getElementById('launch');
+    const loadingScreen = document.getElementById('loading');
+    const loadingInner = document.getElementById('loading-inner');
+    const errorScreen = document.getElementById('error');
+    const errorScreenMessage = document.getElementById('error-message');
+    const errorScreenStack = document.getElementById('error-stack');
+
+    const handleError = (error) => {
+      console.error(error);
+      if (!errorScreen.hidden) return;
+      errorScreen.hidden = false;
+      errorScreenMessage.textContent = '' + error;
+      let debug = error && error.stack || 'no stack';
+      debug += '\nUser agent: ' + navigator.userAgent;
+      errorScreenStack.textContent = debug;
+    };
+    const setProgress = (progress) => {
+      if (loadingInner) loadingInner.style.width = progress * 100 + '%';
+    };
+    const interpolate = (a, b, t) => a + t * (b - a);
+
+    try {
+      setProgress(0.1);
+
+      const scaffolding = new Scaffolding.Scaffolding();
+      scaffolding.width = 480;
+      scaffolding.height = 360;
+      scaffolding.resizeMode = "preserve-ratio";
+      scaffolding.editableLists = false;
+      scaffolding.usePackagedRuntime = true;
+      scaffolding.setup();
+      scaffolding.appendTo(appElement);
+
+      const vm = scaffolding.vm;
+      window.scaffolding = scaffolding;
+      window.vm = scaffolding.vm;
+      window.Scratch = {
+        vm,
+        renderer: vm.renderer,
+        audioEngine: vm.runtime.audioEngine,
+        bitmapAdapter: vm.runtime.v2BitmapAdapter,
+        videoProvider: vm.runtime.ioDevices.video.provider
+      };
+
+      scaffolding.setUsername("player####".replace(/#/g, () => Math.floor(Math.random() * 10)));
+      scaffolding.setAccentColor("#ff4c4c");
+
+      scaffolding.addCloudProvider(new Scaffolding.Cloud.WebSocketProvider(["wss://clouddata.turbowarp.org","wss://clouddata.turbowarp.xyz"], "p4-@S1E1.sb3"));
+
+      vm.setTurboMode(false);
+      if (vm.setInterpolation) vm.setInterpolation(false);
+      if (vm.setFramerate) vm.setFramerate(30);
+      if (vm.renderer.setUseHighQualityRender) vm.renderer.setUseHighQualityRender(false);
+      if (vm.setRuntimeOptions) vm.setRuntimeOptions({
+        fencing: true,
+        miscLimits: true,
+        maxClones: 300,
+      });
+      if (vm.setCompilerOptions) vm.setCompilerOptions({
+        enabled: true,
+        warpTimer: false
+      });
+      if (vm.renderer.setMaxTextureDimension) vm.renderer.setMaxTextureDimension(2048);
+
+      if (typeof ScaffoldingAddons !== 'undefined') {
+        ScaffoldingAddons.run(scaffolding, {"gamepad":false,"pointerlock":false,"specialCloudBehaviors":false,"unsafeCloudBehaviors":false,"pause":false});
+      }
+
+      scaffolding.setExtensionSecurityManager({
+        getSandboxMode: () => 'unsandboxed',
+        canLoadExtensionFromProject: () => true
+      });
+      for (const extension of ["data:text/javascript;,(function(Scratch)%20%7B%20%2F%2F%20Name%3A%20Sound%0A%2F%2F%20ID%3A%20notSound%0A%2F%2F%20Description%3A%20Play%20sounds%20from%20URLs.%0A%0A((Scratch)%20%3D%3E%20%7B%0A%20%20%22use%20strict%22%3B%0A%0A%20%20const%20audioEngine%20%3D%20Scratch.vm.runtime.audioEngine%3B%0A%0A%20%20%2F**%0A%20%20%20*%20This%20method%20assumes%20that%20the%20caller%20has%20already%20requested%20permission%20to%20fetch%20the%20URL.%0A%20%20%20*%20%40param%20%7Bstring%7D%20url%0A%20%20%20*%20%40returns%20%7BPromise%3CArrayBuffer%3E%7D%0A%20%20%20*%2F%0A%20%20const%20fetchAsArrayBufferWithTimeout%20%3D%20(url)%20%3D%3E%0A%20%20%20%20new%20Promise((resolve%2C%20reject)%20%3D%3E%20%7B%0A%20%20%20%20%20%20%2F%2F%20Permission%20is%20checked%20in%20playSound()%0A%20%20%20%20%20%20%2F%2F%20eslint-disable-next-line%20no-restricted-syntax%0A%20%20%20%20%20%20const%20xhr%20%3D%20new%20XMLHttpRequest()%3B%0A%20%20%20%20%20%20let%20timeout%20%3D%20setTimeout(()%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20xhr.abort()%3B%0A%20%20%20%20%20%20%20%20reject(new%20Error(%22Timed%20out%22))%3B%0A%20%20%20%20%20%20%7D%2C%205000)%3B%0A%20%20%20%20%20%20xhr.onload%20%3D%20()%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20clearTimeout(timeout)%3B%0A%20%20%20%20%20%20%20%20if%20(xhr.status%20%3D%3D%3D%20200)%20%7B%0A%20%20%20%20%20%20%20%20%20%20resolve(xhr.response)%3B%0A%20%20%20%20%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20%20%20reject(new%20Error(%60HTTP%20error%20%24%7Bxhr.status%7D%20while%20fetching%20%24%7Burl%7D%60))%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%20%20xhr.onerror%20%3D%20()%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20clearTimeout(timeout)%3B%0A%20%20%20%20%20%20%20%20reject(new%20Error(%60Failed%20to%20request%20%24%7Burl%7D%60))%3B%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%20%20xhr.responseType%20%3D%20%22arraybuffer%22%3B%0A%20%20%20%20%20%20xhr.open(%22GET%22%2C%20url)%3B%0A%20%20%20%20%20%20xhr.send()%3B%0A%20%20%20%20%7D)%3B%0A%0A%20%20%2F**%0A%20%20%20*%20%40type%20%7BMap%3Cstring%2C%20%7Bsound%3A%20AudioEngine.SoundPlayer%20%7C%20null%2C%20error%3A%20unknown%7D%3E%7D%0A%20%20%20*%2F%0A%20%20const%20soundPlayerCache%20%3D%20new%20Map()%3B%0A%0A%20%20%2F**%0A%20%20%20*%20%40param%20%7Bstring%7D%20url%0A%20%20%20*%20%40returns%20%7BPromise%3CAudioEngine.SoundPlayer%3E%7D%0A%20%20%20*%2F%0A%20%20const%20decodeSoundPlayer%20%3D%20async%20(url)%20%3D%3E%20%7B%0A%20%20%20%20const%20cached%20%3D%20soundPlayerCache.get(url)%3B%0A%20%20%20%20if%20(cached)%20%7B%0A%20%20%20%20%20%20if%20(cached.sound)%20%7B%0A%20%20%20%20%20%20%20%20return%20cached.sound%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20throw%20cached.error%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20try%20%7B%0A%20%20%20%20%20%20const%20arrayBuffer%20%3D%20await%20fetchAsArrayBufferWithTimeout(url)%3B%0A%20%20%20%20%20%20const%20soundPlayer%20%3D%20await%20audioEngine.decodeSoundPlayer(%7B%0A%20%20%20%20%20%20%20%20data%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20buffer%3A%20arrayBuffer%2C%0A%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%7D)%3B%0A%20%20%20%20%20%20soundPlayerCache.set(url%2C%20%7B%0A%20%20%20%20%20%20%20%20sound%3A%20soundPlayer%2C%0A%20%20%20%20%20%20%20%20error%3A%20null%2C%0A%20%20%20%20%20%20%7D)%3B%0A%20%20%20%20%20%20return%20soundPlayer%3B%0A%20%20%20%20%7D%20catch%20(e)%20%7B%0A%20%20%20%20%20%20soundPlayerCache.set(url%2C%20%7B%0A%20%20%20%20%20%20%20%20sound%3A%20null%2C%0A%20%20%20%20%20%20%20%20error%3A%20e%2C%0A%20%20%20%20%20%20%7D)%3B%0A%20%20%20%20%20%20throw%20e%3B%0A%20%20%20%20%7D%0A%20%20%7D%3B%0A%0A%20%20%2F**%0A%20%20%20*%20%40param%20%7Bstring%7D%20url%0A%20%20%20*%20%40param%20%7BVM.Target%7D%20target%0A%20%20%20*%20%40returns%20%7BPromise%3Cboolean%3E%7D%20true%20if%20the%20sound%20could%20be%20played%2C%20false%20if%20the%20sound%20could%20not%20be%20decoded%0A%20%20%20*%2F%0A%20%20const%20playWithAudioEngine%20%3D%20async%20(url%2C%20target)%20%3D%3E%20%7B%0A%20%20%20%20const%20soundBank%20%3D%20target.sprite.soundBank%3B%0A%0A%20%20%20%20%2F**%20%40type%20%7BAudioEngine.SoundPlayer%7D%20*%2F%0A%20%20%20%20let%20soundPlayer%3B%0A%20%20%20%20try%20%7B%0A%20%20%20%20%20%20const%20originalSoundPlayer%20%3D%20await%20decodeSoundPlayer(url)%3B%0A%20%20%20%20%20%20soundPlayer%20%3D%20originalSoundPlayer.take()%3B%0A%20%20%20%20%7D%20catch%20(e)%20%7B%0A%20%20%20%20%20%20console.warn(%0A%20%20%20%20%20%20%20%20%22Could%20not%20fetch%20audio%3B%20falling%20back%20to%20primitive%20approach%22%2C%0A%20%20%20%20%20%20%20%20e%0A%20%20%20%20%20%20)%3B%0A%20%20%20%20%20%20return%20false%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20soundBank.addSoundPlayer(soundPlayer)%3B%0A%20%20%20%20await%20soundBank.playSound(target%2C%20soundPlayer.id)%3B%0A%0A%20%20%20%20delete%20soundBank.soundPlayers%5BsoundPlayer.id%5D%3B%0A%20%20%20%20soundBank.playerTargets.delete(soundPlayer.id)%3B%0A%20%20%20%20soundBank.soundEffects.delete(soundPlayer.id)%3B%0A%0A%20%20%20%20return%20true%3B%0A%20%20%7D%3B%0A%0A%20%20%2F**%0A%20%20%20*%20This%20method%20assumes%20that%20the%20caller%20has%20already%20requested%20permission%20to%20fetch%20the%20URL.%0A%20%20%20*%20%40param%20%7Bstring%7D%20url%0A%20%20%20*%20%40param%20%7BVM.Target%7D%20target%0A%20%20%20*%20%40returns%20%7BPromise%3Cvoid%3E%7D%0A%20%20%20*%2F%0A%20%20const%20playWithAudioElement%20%3D%20(url%2C%20target)%20%3D%3E%0A%20%20%20%20new%20Promise((resolve%2C%20reject)%20%3D%3E%20%7B%0A%20%20%20%20%20%20%2F%2F%20Unfortunately%2C%20we%20can't%20play%20all%20sounds%20with%20the%20audio%20engine.%0A%20%20%20%20%20%20%2F%2F%20For%20these%20sounds%2C%20fall%20back%20to%20a%20primitive%20%3Caudio%3E-based%20solution%20that%20will%20work%20for%20all%0A%20%20%20%20%20%20%2F%2F%20sounds%2C%20even%20those%20without%20CORS.%0A%20%20%20%20%20%20%2F%2F%20Permission%20is%20checked%20in%20playSound()%0A%20%20%20%20%20%20%2F%2F%20eslint-disable-next-line%20no-restricted-syntax%0A%20%20%20%20%20%20const%20mediaElement%20%3D%20new%20Audio(url)%3B%0A%0A%20%20%20%20%20%20%2F%2F%20Make%20a%20minimal%20effort%20to%20simulate%20Scratch's%20sound%20effects.%0A%20%20%20%20%20%20%2F%2F%20We%20can%20get%20pretty%20close%20for%20volumes%20%3C100%25.%0A%20%20%20%20%20%20%2F%2F%20playbackRate%20does%20not%20have%20enough%20range%20for%20simulating%20pitch.%0A%20%20%20%20%20%20%2F%2F%20There%20is%20no%20way%20for%20us%20to%20pan%20left%20or%20right.%0A%20%20%20%20%20%20mediaElement.volume%20%3D%20target.volume%20%2F%20100%3B%0A%0A%20%20%20%20%20%20mediaElement.onended%20%3D%20()%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20resolve()%3B%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%20%20mediaElement%0A%20%20%20%20%20%20%20%20.play()%0A%20%20%20%20%20%20%20%20.then(()%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20%20%20%2F%2F%20Wait%20for%20onended%0A%20%20%20%20%20%20%20%20%7D)%0A%20%20%20%20%20%20%20%20.catch((err)%20%3D%3E%20%7B%0A%20%20%20%20%20%20%20%20%20%20reject(err)%3B%0A%20%20%20%20%20%20%20%20%7D)%3B%0A%20%20%20%20%7D)%3B%0A%0A%20%20%2F**%0A%20%20%20*%20%40param%20%7Bstring%7D%20url%0A%20%20%20*%20%40param%20%7BVM.Target%7D%20target%0A%20%20%20*%20%40returns%20%7BPromise%3Cvoid%3E%7D%0A%20%20%20*%2F%0A%20%20const%20playSound%20%3D%20async%20(url%2C%20target)%20%3D%3E%20%7B%0A%20%20%20%20try%20%7B%0A%20%20%20%20%20%20if%20(!(await%20Scratch.canFetch(url)))%20%7B%0A%20%20%20%20%20%20%20%20throw%20new%20Error(%60Permission%20to%20fetch%20%24%7Burl%7D%20denied%60)%3B%0A%20%20%20%20%20%20%7D%0A%0A%20%20%20%20%20%20const%20success%20%3D%20await%20playWithAudioEngine(url%2C%20target)%3B%0A%20%20%20%20%20%20if%20(!success)%20%7B%0A%20%20%20%20%20%20%20%20return%20await%20playWithAudioElement(url%2C%20target)%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%20catch%20(e)%20%7B%0A%20%20%20%20%20%20console.warn(%60All%20attempts%20to%20play%20%24%7Burl%7D%20failed%60%2C%20e)%3B%0A%20%20%20%20%7D%0A%20%20%7D%3B%0A%0A%20%20class%20Sound%20%7B%0A%20%20%20%20getInfo()%20%7B%0A%20%20%20%20%20%20return%20%7B%0A%20%20%20%20%20%20%20%20%2F%2F%20'sound'%20would%20conflict%20with%20normal%20Scratch%0A%20%20%20%20%20%20%20%20id%3A%20%22notSound%22%2C%0A%20%20%20%20%20%20%20%20name%3A%20%22Sound%22%2C%0A%20%20%20%20%20%20%20%20blocks%3A%20%5B%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22play%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22start%20sound%20from%20url%3A%20%5Bpath%5D%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20path%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3A%20Scratch.ArgumentType.STRING%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20defaultValue%3A%20%22https%3A%2F%2Fextensions.turbowarp.org%2Fmeow.mp3%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20opcode%3A%20%22playUntilDone%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20blockType%3A%20Scratch.BlockType.COMMAND%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20text%3A%20%22play%20sound%20from%20url%3A%20%5Bpath%5D%20until%20done%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20arguments%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20path%3A%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20type%3A%20Scratch.ArgumentType.STRING%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20defaultValue%3A%20%22https%3A%2F%2Fextensions.turbowarp.org%2Fmeow.mp3%22%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%20%20%5D%2C%0A%20%20%20%20%20%20%7D%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20play(%7B%20path%20%7D%2C%20util)%20%7B%0A%20%20%20%20%20%20playSound(path%2C%20util.target)%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20playUntilDone(%7B%20path%20%7D%2C%20util)%20%7B%0A%20%20%20%20%20%20return%20playSound(path%2C%20util.target)%3B%0A%20%20%20%20%7D%0A%20%20%7D%0A%0A%20%20Scratch.extensions.register(new%20Sound())%3B%0A%7D)(Scratch)%3B%0A%20%7D)(Scratch)%3B"]) {
+        vm.extensionManager.loadExtensionURL(extension);
+      }
+
+    } catch (e) {
+      handleError(e);
+    }
+  </script>
+  
+  
+    <script>
+      const getProjectData = (function() {
+        const storage = scaffolding.storage;
+        storage.onprogress = (total, loaded) => {
+          setProgress(interpolate(0.2, 0.98, loaded / total));
+        };
+        
+        storage.addWebStore(
+          [
+            storage.AssetType.ImageVector,
+            storage.AssetType.ImageBitmap,
+            storage.AssetType.Sound,
+            storage.AssetType.Font
+          ].filter(i => i),
+          (asset) => new URL('./assets/' + asset.assetId + '.' + asset.dataFormat, location).href
+        );
+        return () => new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => {
+          resolve(xhr.response);
+        };
+        xhr.onerror = () => {
+          if (location.protocol === 'file:') {
+            reject(new Error('Zip environment must be used from a website, not from a file URL.'));
+          } else {
+            reject(new Error('Request to load project data failed.'));
+          }
+        };
+        xhr.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setProgress(interpolate(0.1, 0.2, e.loaded / e.total));
+          }
+        };
+        xhr.responseType = 'arraybuffer';
+        xhr.open('GET', "./assets/project.json");
+        xhr.send();
+      });
+      })();
+    </script>
+  <script>
+    const run = async () => {
+      const projectData = await getProjectData();
+      await scaffolding.loadProject(projectData);
+      setProgress(1);
+      loadingScreen.hidden = true;
+      if (false) {
+        scaffolding.start();
+      } else {
+        launchScreen.hidden = false;
+        launchScreen.addEventListener('click', () => {
+          launchScreen.hidden = true;
+          scaffolding.start();
+        });
+        launchScreen.focus();
+      }
+    };
+    run().catch(handleError);
+  </script>
+</body>
+</html>
